@@ -2,4 +2,4 @@
 # Author: Axela Keeza Ugalde
 Date: June 1 2026
 
-Activity 3: https://axelaugalde-star.github.io/datasci/
+Activity 3: https://axelaugalde-star.github.io/datasci/myrmarkdown/[LBBBI27]-Ugalde-Activity-6-Act3.html
