@@ -1,0 +1,164 @@
+---
+title: "My First Rmarkdown - Activity 3 (Summary Stats)"
+author: "Axela Keeza T. Ugalde"
+date: "01 June 2026"
+output: html_document
+---
+# Activity 3 - Summary statistics, frequency distribution, and basic graphical representation
+
+
+## A. Read and perform descriptive statistics
+### A.1 Data Loading and Cleaning
+```{r readcsv, echo = TRUE, warning = TRUE, fig.align = "center"}
+# Read the csv file
+my_data <- read.csv("herpetozoa-033-095-s001.csv")
+
+# Check class of data
+class(my_data)
+
+# Clean the data by removing NA
+clean_data <- my_data[complete.cases(my_data),]
+
+# Countercheck if any "NA" is found
+sum(is.na(clean_data))
+```
+### A.2 Show Data Structure
+```{r datastr, echo = TRUE, warning = TRUE, fig.align = "center"}
+# Show the data structure
+str(clean_data)
+```
+### A.3 Elevation Summary Statistics
+Subset the elevation data to calculate the mean, standard deviation, and its range.
+```{r elev, echo = TRUE, warning = TRUE, fig.align = "center"}
+# Subset data
+elev_data <- clean_data$Elev
+
+library(pander)
+elev_mean <- mean(elev_data)
+elev_sd <- sd(elev_data)
+elev_range <- range(elev_data)
+elev_descstat <- cbind(elev_mean, elev_sd, elev_range[1], elev_range[2])
+elev_descstat
+colnames(elev_descstat) <- c("Mean", "Standard Deviation", "Range Min", "Range Max")
+pander(elev_descstat)
+
+```
+### A.4 Species Observations
+Using 2 loop methods to count observations for species in Columns G to AG from the csv file.
+
+#### Loop Methods {.tabset .tabset-fade .tabset-pills}
+
+##### Typical Loop
+```{r typLoop, echo = TRUE, warning = TRUE, fig.align = "center"}
+## Subset data
+species_obs <- clean_data[ , 7:33]
+species_name <- colnames(species_obs)
+
+#List to store the data per iteration of the Typical Loop
+species_tot <- vector("list", length = 27)
+for (i in 1:27){
+species_sum <- sum(species_obs[ , i])
+species_tot[[i]] <- species_sum
+names(species_tot)[i] <- species_name[i]
+
+species_tot
+}
+```
+
+##### Compact Loop by Sapply
+```{r CompLoop, echo = TRUE, warning = TRUE, fig.align = "center"}
+species_totCL <- sapply(species_obs, sum)
+species_totCL
+```
+
+#### A.4 Which species has the most and the fewest observations?
+```{r qs_A4, echo = TRUE, warning = TRUE, fig.align = "center"}
+most_obsSpe <- max(species_totCL)
+species_totCL[species_totCL == most_obsSpe]
+fewest_obsSpe <- min(species_totCL)
+species_totCL[species_totCL == fewest_obsSpe]
+```
+
+### A.5 Habitat Types
+```{r htypes, echo = TRUE, warning = TRUE, fig.align = "center"}
+h_type <- cbind(clean_data["Htypes"], clean_data["Phlo"], clean_data["Babu"], clean_data["Geat"], clean_data["Hety"], clean_data["Bosc"], clean_data["Drru"], clean_data["Apbo"])
+
+# Split for easier calculations
+htype_split <- split(h_type, h_type$Htypes)
+htype_split
+```
+### A.5 Determine the mean count of these species in each habitat type.
+```{r htypes_mean, echo = TRUE, warning = TRUE, fig.align = "center"}
+htype_mean <- sapply(htype_split, function(x){
+colMeans(x[ , 2:8])
+})
+pander(htype_mean)
+```
+
+### A.5 Which habitat type has the most species counts?
+```{r htypes_sum, echo = TRUE, warning = TRUE, fig.align = "center"}
+hytpe_sum <- sapply(htype_split, function(x){
+colSums(x[ ,2:8])
+})
+pander(hytpe_sum)
+htype_tot <- sapply(htype_split, function(x){
+sum(x[ ,2:8])
+})
+pander(htype_tot)
+maxHtype <- max(htype_tot)
+htype_tot[htype_tot == maxHtype]
+```
+## B. Plots
+
+### B.1 Scatterplot
+```{r scatterplot, echo = TRUE, warning = TRUE, fig.align = "center"}
+plot_data <- cbind(clean_data["SPPTotal"], clean_data["Elev"], clean_data["Htypes"])
+plot_data
+
+plot_xy <- plot(clean_data$Elev, clean_data$SPPTotal,
+xlab = "Elevation",
+ylab = "Species Total Count",
+main = "Herpetofauna Distribution by Elevation",
+col = as.factor(plot_data$Htypes),
+pch = 16
+)
+legend("topright",
+legend = levels(as.factor(plot_data$Htypes)),
+col = 1:length(levels(as.factor(plot_data$Htypes))),
+pch = 16)
+```
+
+#### B1. Are there habitat types with no species observations? What are these?
+```{r qs_b1, echo = TRUE, warning = TRUE, fig.align = "center"}
+
+plot_htype_tot <- tapply(plot_data$SPPTotal, plot_data$Htypes, sum)
+plot_htype_tot
+#None
+```
+### B.2 Bar Plot
+```{r barplot, echo = TRUE, warning = TRUE, fig.align = "center"}
+barplot_xy <- barplot(plot_htype_tot,
+main = "Total Species Observed per Habitat",
+xlab = "Habitat Types",
+ylab = "Total Species Observed",
+col = 1:4)
+```
+
+
+### B.3 Histogram
+```{r histogram, echo = TRUE, warning = TRUE, fig.align = "center"}
+
+hist_xy <- hist(plot_data$SPPTotal,
+main = "Histogram of Total Species Counts",
+xlab = "Total Species Counts",
+ylab = "Frequency",
+col = "lightpink",
+border = "black",
+breaks = 8)
+```
+
+## C. Interpretation
+
+ Based on the scatterplot, for species total count v elevation, there was a clear observation of a negative relationship between the elevation and species richness. Elevations below 500 have higher biodiversity(6-8). Meanwhile, higher elevations of above 500 have 2 or less. Meanwhile, for species total count vs habitat type, most of the OGF are with higher elevation but was observed with 1-5 species, ASG and ESG sites were on the lower elevation but has higher observed species. Meanwhile, CVT habitat type had low species total count even with the varying elevation.
+Barplots of total species observed per habitat showed that the habitat type "ASG" has the highest cumulative species observed (58), followed by "OGF" (48), then "ESG"(28), and lastly "CVT"(1).
+The histogram of total species count shows a positively skewed distribution indicating more observation sites are species-poor and there were less sites with high-diversity.
