@@ -3,3 +3,5 @@
 Date: June 1 2026
 
 Activity 3: https://axelaugalde-star.github.io/datasci/myrmarkdown/[LBBBI27]-Ugalde-Activity-6-Act-3.html
+
+Activity 4: https://axelaugalde-star.github.io/datasci/myrmarkdown/[LBBBI27]-Ugalde-Activity-6-Act-4.html
