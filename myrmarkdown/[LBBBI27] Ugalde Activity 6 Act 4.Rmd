@@ -1,0 +1,97 @@
+---
+title: "My First Rmarkdown - Activity 4 (Tidyverse)"
+author: "Axela Keeza T. Ugalde"
+date: "01 June 2026"
+output: html_document
+---
+  
+# Activity 4 - Tidverse: Data wrangling
+  
+## A. Read and Filter Out {.tabset .tabset-fade .tabset-pills}
+### A.1 Data Loading
+```{r dataload, echo = TRUE, warning = TRUE, fig.align = "center"}
+library(pander)
+library(tidyverse)
+
+# Read data
+my_data <- read.csv("habitat_types.csv")
+my_data
+
+# Check type of class
+class(my_data)
+
+# Check Data Structure and NA
+sum(is.na(my_data))
+my_data |> glimpse()
+```
+
+### A.2 Subset Data
+```{r subset, echo = TRUE, warning = TRUE, fig.align = "center"}
+# Subset data - Transect, Htypes, Small Trees, Flowering Trees
+select_data <- select(my_data, Transect, Htypes, SmallTrees, FloweringTrees)
+pander(select_data)
+
+## Filter CVT and Sort "Small Trees" (descending)
+select_data |>
+  filter(Htypes == "CVT") |>
+  arrange(desc(SmallTrees)) ->
+  cvt_descSTrees
+
+pander(cvt_descSTrees)
+```
+
+### A.3 Transect with Most Small Trees
+```{r qs_a2, echo = TRUE, warning = TRUE, fig.align = "center"}
+cvt_descSTrees |> 
+  filter(SmallTrees == max(SmallTrees)) -> mostStrees
+
+pander(mostStrees)
+```
+
+### A.4 Mean of Flowering Trees/Htypes
+```{r mean, echo = TRUE, warning = TRUE, fig.align = "center"}
+ftrees_htype <- select_data |> 
+  group_by(Htypes) |> 
+  summarize(mean_flowering = mean(FloweringTrees))
+
+pander(ftrees_htype)
+```
+
+**Which habitat types do not differ significantly in the mean number of flowering trees?**
+
+ASG and ESG do not differ significantly in the mean number of flowering trees with 5.26 and 5.38, respectively. Meanwhile, CVT has 8.86.
+
+### A.5 HerbGroundDiff - Difference bet HerbsCover and GroundCover using Mutate
+```{r hgrounddiff, echo = TRUE, warning = TRUE, fig.align = "center"}
+sel_df_mod <- select_data |> 
+  mutate(HerbGroundDiff = my_data$HerbsCover - my_data$GroundCover) |>
+  arrange(HerbGroundDiff)
+
+pander(sel_df_mod)
+```
+
+### A.6 Transect with No Difference
+```{r zeroes, echo = TRUE, warning = TRUE, fig.align = "center"}
+sel_df_mod |> 
+  filter(HerbGroundDiff == 0) -> zeroes
+
+pander(zeroes)
+```
+
+### A.7 Wide Version
+```{r widever, echo = TRUE, warning = TRUE, fig.align = "center"}
+sel_df_modWide <- sel_df_mod |>
+                  pivot_wider(
+                    names_from = Htypes,
+                    values_from = c(SmallTrees, FloweringTrees, HerbGroundDiff),
+                  )
+view(sel_df_modWide)
+pander(sel_df_modWide)
+```
+
+
+# B. Reflection
+
+
+Compared to the last activity, this activity was faster to understand. It made subsetting and applying functions/operation with filtering and sorting easier.
+I just need more time to practice the transformations but the pipe function makes things more efficient and clean-looking.
