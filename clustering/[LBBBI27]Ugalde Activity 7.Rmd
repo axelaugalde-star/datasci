@@ -1,0 +1,161 @@
+---
+title: "Ugalde_K-means"
+author: "Axela Keeza T. Ugalde"
+date: "2026-06-08"
+output: html_document
+---
+# Activity 7 - Clustering (K-means) {.tabset .tabset-fade .tabset-pills}
+  
+## Data Preparation
+```{r setup, echo = TRUE, warning = TRUE, fig.align = "center"}
+
+library(tidyverse)
+# Data Preparation
+my_data <- read.csv("morphology_data.csv")
+as.data.frame(my_data)
+
+# Remove Non-Numeric Columns
+numeric_data <- my_data |>
+  select(where(is.numeric))
+
+# Ensure No NA
+clean_data <- numeric_data[complete.cases(numeric_data), ]
+sum(is.na(clean_data))
+
+# Standardize
+scaled_data <- scale(clean_data)
+scaled_data
+```
+
+## A. K-Means: Single K
+```{r singleK, echo = TRUE, warning = TRUE, fig.align = "center"}
+
+# Set seed for reproducibility
+set.seed(123)
+
+# Perform K-means clustering with 3 clusters
+kmeans_result <- kmeans(scaled_data, centers = 3, nstart = 25)
+
+## View cluster assignments
+head(kmeans_result$cluster)
+
+## Summary of results
+kmeans_result
+```
+
+## A. K-Means: Single K - Scatterplot
+```{r scatterplot, echo = TRUE, warning = TRUE, fig.align = "center"}
+
+# Setup: dataframe, colors, centroids
+library(ggplot2)
+df_data <- as.data.frame(scaled_data)
+df_data$cluster <-as.factor(kmeans_result$cluster)
+df_centers <- as.data.frame(kmeans_result$centers)
+
+# Plot
+ggplot(df_data,
+       aes(x = SVL,
+           y = TD,
+           color = cluster)) +
+      geom_point(size = 2,
+                 alpha = 0.7) +
+      geom_point(data = df_centers,
+                 aes (x = SVL,
+                      y = TD),
+                  color = "black",
+                  shape = 8,
+                  size = 4,
+                  stroke = 1.5) +
+      labs(title = "K-means (K=3) of Lizards",
+           subtitle = "Centers marked with stars(*)",
+           x = "SVL",
+           y = "TD") +
+      theme_minimal()
+```
+
+## B. K-Means: Loop and Elbow Curve
+```{r kloop, echo = TRUE, fig.align="center", warning = TRUE}
+
+k_values = 1:10
+wss_values <- numeric(length(k_values))
+
+# For loop
+optimal <- for (i in k_values){
+    set.seed(i)
+    loop_kmeans <- kmeans(scaled_data, centers = i, nstart = 25)
+    wss_values[i] <- loop_kmeans$tot.withinss
+}
+
+# Elbow Curve: Setup
+elbow_df <- data.frame( K = k_values, WSS = wss_values)
+
+# Plot
+ggplot(elbow_df,
+       aes(x = K,
+           y = WSS)) +
+      geom_line(color = "lightpink", linewidth = 1) +
+      geom_point(color = "hotpink", size = 2) +
+      scale_x_continuous(breaks = k_values) + # Forces crisp integer breaks on X-axis
+    labs(
+        title = "Elbow Method for Optimal K",
+        subtitle = "Looking for the inflection point",
+        x = "Number of Clusters (K)",
+        y = "Total Within-Cluster Sum of Squares (WSS)"
+    ) +
+    theme_minimal()
+
+## Optimal K: Either 2 or 3
+```
+
+## B. K-Means: Optimal K
+```{r optimal, echo = TRUE, fig.align="center", warning = TRUE}
+
+# Repeat A. 6-8
+# Set seed for reproducibility
+set.seed(123)
+
+# Optimal K
+optimal_k <- 3
+
+# Perform K-means clustering with optimal k
+km_optimal <- kmeans(scaled_data, centers = optimal_k, nstart = 25)
+
+## View cluster assignments
+head(km_optimal$cluster)
+
+## Summary of results
+km_optimal
+
+# Setup: dataframe, colors, centroids
+library(ggplot2)
+df_final <- as.data.frame(scaled_data)
+df_final$cluster <-as.factor(km_optimal$cluster)
+final_center <- as.data.frame(km_optimal$centers)
+# With Location as different shapes
+df_final$Pop <- my_data$Pop[complete.cases(numeric_data)]
+
+# Plot
+ggplot(df_final,
+      aes(x = SVL,
+           y = TD,
+           color = cluster)) +
+      geom_point(aes(shape = Pop),
+                  size = 2,
+                  alpha = 0.7) +
+      geom_point(data = final_center,
+                 aes (x = SVL,
+                      y = TD),
+                  color = "hotpink1",
+                  shape = 8,
+                  size = 3,
+                  stroke = 1.5,
+                  inherit.aes = FALSE) +
+      labs(title = "Optimal K-Means Clustering",
+           subtitle = "Centers marked with stars(*)",
+           x = "SVL",
+           y = "TD") +
+      theme_minimal() +
+      theme(panel.border = element_rect(color = "black",
+                                        fill = NA, 
+                                        linewidth = 1))
+```
