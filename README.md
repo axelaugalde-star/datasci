@@ -9,4 +9,4 @@ Activty 6: RMarkdown
 
 Activity 7: KMeans: https://axelaugalde-star.github.io/datasci/clustering_by_Kmeans/[LBBBI27]Ugalde-Activity-7.html
 
-Activity 8: Hierarchal (Agglomerative) - Ward's and Single Linkage Methods: https://axelaugalde-star.github.io/datasci/
+Activity 8: Hierarchal (Agglomerative) - Ward's and Single Linkage Methods: https://axelaugalde-star.github.io/datasci/clustering_by_Hierarchy(Agglomerative)/[LBBBI27]Ugalde-Activity-8.html
