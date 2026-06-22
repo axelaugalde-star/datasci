@@ -12,3 +12,5 @@ Activity 7: KMeans: https://axelaugalde-star.github.io/datasci/clustering_by_Kme
 Activity 8: Hierarchal (Agglomerative) - Ward's and Single Linkage Methods: https://axelaugalde-star.github.io/datasci/clustering_by_Hierarchy(Agglomerative)/[LBBBI27]Ugalde-Activity-8.html
 
 Activity 9: https://axelaugalde-star.github.io/datasci/PCAtest/[LBBBI27]Ugalde-Activity-9.html
+
+Activity 10: https://axelaugalde-star.github.io/datasci/GIS/[LBBBI27]Ugalde-Activity-10.html
