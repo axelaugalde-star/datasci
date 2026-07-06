@@ -14,3 +14,5 @@ Activity 8: Hierarchal (Agglomerative) - Ward's and Single Linkage Methods: http
 Activity 9: https://axelaugalde-star.github.io/datasci/PCAtest/[LBBBI27]Ugalde-Activity-9.html
 
 Activity 10: https://axelaugalde-star.github.io/datasci/GIS/[LBBBI27]Ugalde-Activity-10.html
+
+Activity 11: https://axelaugalde-star.github.io/datasci/LinearRegression/[LBBBI27]Ugalde-Activity-11.html
