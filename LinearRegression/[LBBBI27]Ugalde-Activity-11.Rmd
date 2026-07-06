@@ -1,0 +1,174 @@
+---
+title: "Ugalde_linear_reg"
+author: "Axela Keeza T. Ugalde"
+date: "`r Sys.Date()`"
+output: html_document
+---
+# Activity 11 - Linear Regression {.tabset .tabset-fade .tabset-pills}
+  
+## Data Preparation
+```{r setup, echo = TRUE, warning = TRUE, fig.align = "center"}
+library(sf)
+library(terra)
+library(dplyr)
+library(ggplot2)
+library(ggnewscale)
+library(tidyverse)
+
+# Read CSV
+my_data <- read.csv("herpetozoa-033-095-s001.csv")
+
+# Clean the data by removing NA
+clean_data <- my_data[complete.cases(my_data),]
+
+# Countercheck if any "NA" is found
+sum(is.na(clean_data))
+
+# Elevation
+phil_dem <- rast("ph_ strm_geo.tif")
+
+# Subset coordinates
+# Clean and Subset
+coord_data <- clean_data |>
+  select(Long, Lat)
+
+points_vect <- vect(coord_data, 
+                      geom = c("Long","Lat"), 
+                      crs = crs(phil_dem))
+
+# Extract elev of coords
+elev_data <- terra::extract(phil_dem, points_vect)
+elev_data
+
+# Combine and Rename
+regression_data <- data.frame(richness = clean_data$SPPTotal,
+                              elevation = elev_data$Band_1)
+regression_data
+```
+
+## A. Simple linear regression
+```{r manual, echo = TRUE, warning = TRUE, fig.align = "center"}
+
+# Data
+x_indep <- regression_data$elevation
+y_dep <- regression_data$richness
+
+# Means
+xbar <- mean(x_indep)
+ybar <- mean(y_dep)
+
+# Slope (b)
+b <- sum((x_indep - xbar)*(y_dep - ybar))/sum((x_indep - xbar)^2)
+b
+
+# Intercept (a)
+a <- ybar - b*xbar
+a
+
+# Write the equation
+cat("Regression Equation:\n")
+cat("y =", round(a,3), "+", round(b,3), "x\n")
+
+# Calculate the predicted arm length
+yhat <- a + b * x_indep
+
+data.frame(
+  Elevation = x_indep,
+  SPPTotal = y_dep,
+  Predicted = round(yhat,2)
+)
+## Plot the data with fitted line
+plot(x_indep, y_dep,
+     pch = 19,
+     col = "palevioletred1",
+     xlab = "Elevation (m)",
+     ylab = "Species Richness/SPPTotal",
+     main = "Simple Linear Regression")
+
+abline(a, b,
+       col = "maroon",
+       lwd = 2)
+
+## Plot with predicted values
+pdf("simplelinearReg_elev_richness.pdf", width = 10, height = 8)
+
+## Observed data
+my_plot <- plot(x_indep, y_dep,
+     pch = 19,
+     col = "palevioletred1",
+     xlab = "Elevation (m)",
+     ylab = "Species Richness/SPPTotal",
+     main = "Simple Linear Regression")
+
+## Add fitted regression line
+abline(a, b,
+       col = "maroon",
+       lwd = 2)
+
+## Add predicted values
+points(x_indep, yhat,
+       pch = 17,      # Triangle
+       col = "orchid2",
+       cex = 1.2)
+
+## Draw residual lines
+segments(x0 = x_indep, y0 = y_dep,
+         x1 = x_indep, y1 = yhat,
+         lty = 2,
+         col = "gray50")
+
+## Add legend
+legend("topright",
+       legend = c("Observed", "Predicted", "Regression Line"),
+       pch = c(19, 17, NA),
+       lty = c(NA, NA, 1),
+       col = c("palevioletred1", "orchid2", "maroon"),
+       lwd = c(NA, NA, 2),
+       bty = "n")
+dev.off()
+
+## Calculate R squared
+## Sum of Squared Errors (SSE)
+## SSE = Σ(y - ŷ)²
+
+SSE <- sum((y_dep - yhat)^2)
+
+## Total Sum of Squares (SST)
+## SST = Σ(y - ȳ)²
+
+SST <- sum((y_dep - ybar)^2)
+
+## Coefficient of Determination
+## R² = 1 - (SSE / SST)
+
+R2 <- 1 - (SSE / SST)
+R2
+```
+There is a **negative linear relationship** between elevation and species richness.
+
+## B. Multiple linear regression
+```{r mult, echo = TRUE, warning = TRUE, fig.align = "center"}
+
+# Load and Extract
+precip_rast <- rast("annual_precipitation.tif")
+temp_rast <- rast("annual_temperature.tif")
+
+precip_data <- terra::extract(precip_rast, points_vect)
+temp_data <- terra::extract(temp_rast, points_vect)
+
+# Combine data
+combined_data <- regression_data |>
+  mutate(precipitation = precip_data[ , 2],
+         temperature = temp_data[ ,2])
+
+# Multiple regression formula: y ~ x1 + x2 + x3
+multiple_lreg <- lm(richness ~ elevation + precipitation + temperature, data = combined_data)
+
+# Display the full results
+summary(multiple_lreg)
+```
+
+*Which relationship is statistically significant?*
+
+A relationship is considered significant if this value is less than 0.05.
+Based from the summary table, the **precipitation** with a p-value of 0.02770 and **temperature** with p-value of 0.03107.
