@@ -1,0 +1,148 @@
+---
+title: "Ugalde_logistic_reg"
+author: "Axela Keeza T. Ugalde"
+date: "`r Sys.Date()`"
+output: html_document
+---
+# Activity 11 - Linear Regression {.tabset .tabset-fade .tabset-pills}
+  
+## Data Preparation
+```{r setup, echo = TRUE, warning = TRUE, fig.align = "center"}
+library(sf)
+library(terra)
+library(dplyr)
+library(ggplot2)
+library(ggnewscale)
+library(tidyverse)
+# Read CSV
+my_data <- read.csv("ph_mouse_deer.csv")
+
+# Clean the data by removing NA
+clean_data <- my_data[complete.cases(my_data),]
+
+# Countercheck if any "NA" is found
+sum(is.na(clean_data))
+
+# From activity 10
+map_coords <- st_as_sf(clean_data, 
+                      coords = c("Longitude","Latitude"), 
+                      crs = 4326)
+
+# Load Provincial Boundaries
+target_provinces <- st_read("PHL_adm1.shp") 
+target_localities <- target_provinces |> filter(NAME_1 == "Palawan")
+
+# Load Elevation Raster
+phil_dem <- rast("ph_ strm_geo.tif")
+
+if (st_crs(map_coords) != st_crs(phil_dem)) {
+  map_coords <- st_transform(map_coords, st_crs(phil_dem))
+}
+if (st_crs(target_localities) != st_crs(phil_dem)) {
+  target_localities <- st_transform(target_localities, st_crs(phil_dem))
+}
+survey_bbox <- st_bbox(map_coords)
+localities_ext <- ext(survey_bbox["xmin"] - 0.1, 
+                       survey_bbox["xmax"] + 0.1, 
+                       survey_bbox["ymin"] - 0.1, 
+                       survey_bbox["ymax"] + 0.1)
+
+dem_clipped <- crop(phil_dem, localities_ext)
+dem_df <- as.data.frame(dem_clipped, xy = TRUE)
+colnames(dem_df) <- c("x", "y", "elevation")
+```
+
+## A. Map
+```{r map, echo = TRUE, warning = TRUE, fig.align = "center"}
+survey_bbox <- st_bbox(map_coords)
+
+# Plot using the province boundaries as the zoom limits
+ggplot() +
+  geom_tile(data = dem_df, aes(x = x, y = y, fill = elevation)) +
+  scale_fill_gradientn(colors = 
+                         c("#2b83ba", "#abdda4", "#ffffbf", "#fdae61", "#d7191c"), 
+                       name = "Elevation (m)", breaks = c(0, 100, 200, 300, 400, 500)) +
+  coord_equal() +
+  geom_sf(data = target_localities, fill = NA, color = "black", linewidth = 0.5) +
+  geom_point(
+    data = clean_data, 
+    aes(x = Longitude, y = Latitude), 
+    shape = 21, 
+    fill = "hotpink", 
+    color = "black", 
+    size = 3.5,        
+    stroke = 1) +
+  coord_sf(xlim = c(survey_bbox["xmin"] - 0.15, survey_bbox["xmax"] + 0.15), 
+           ylim = c(survey_bbox["ymin"] - 0.15, survey_bbox["ymax"] + 0.15), 
+           expand = FALSE) + 
+  labs(title = 
+         expression(paste("Distribution of ", italic("Tragulus nigricans"))),
+       subtitle = "Balabac Strait Protected Landscape, Palawan",
+       x = "Longitude (°E)", y = "Latitude (°N)") +
+  theme_linedraw() +
+  theme(
+    panel.grid.major = element_line(color = "gray90", linetype = "dashed"),
+    plot.title = element_text(face = "bold"),
+    panel.background = element_rect(fill = "aliceblue"))
+
+ggsave("mousedeer_map.pdf", width = 8, height = 8, units = "in", dpi = 300)
+```
+
+## B. Logistic Regression
+```{r logreg, echo = TRUE, warning = TRUE, fig.align = "center"}
+# Habitat codes as factor
+clean_data$HabitatCode <- as.factor(clean_data$HabitatCode)
+
+mousedeer_data <- glm(Detected ~ AverageDistance + Effort + HabitatCode, data = clean_data, family = binomial(link = "logit"))
+
+summary(mousedeer_data)
+exp(coef(mousedeer_data))
+baseline_habitat <- names(which.max(table(clean_data$HabitatCode)))
+
+# Independent variable = Effort
+# Define values
+effort_seq <- seq(min(clean_data$Effort), max(clean_data$Effort), length.out = 100)
+
+# New data wit
+newdata_effort <- data.frame(
+  Effort = effort_seq,
+  AverageDistance = mean(clean_data$AverageDistance),
+  HabitatCode = factor(baseline_habitat, levels = levels(clean_data$HabitatCode))
+)
+
+# Prediction
+newdata_effort$prob <- predict(mousedeer_data, newdata = newdata_effort, type = "response")
+
+# Plot and PDF
+plot(clean_data$Effort, clean_data$Detected, pch = 19, col = "gray40",
+     xlab = "Sampling Effort", ylab = "Probability of Detection",
+     main = "Effect of Effort on Mouse Deer Detection", ylim = c(0, 1))
+lines(newdata_effort$Effort, newdata_effort$prob, col = "blue", lwd = 2.5)
+dev.copy(pdf, "logistic_curve_effort.pdf", width = 7, height = 5)
+dev.off()
+
+# Independent variable = Average Distance
+
+# Define seq for Ave Dist
+dist_seq <- seq(min(clean_data$AverageDistance), max(clean_data$AverageDistance), length.out = 100)
+
+# Create newdata
+newdata_dist <- data.frame(
+  AverageDistance = dist_seq,
+  Effort = mean(clean_data$Effort),
+  HabitatCode = factor(baseline_habitat, levels = levels(clean_data$HabitatCode))
+)
+
+# Predict
+newdata_dist$prob <- predict(mousedeer_data, newdata = newdata_dist, type = "response")
+
+# Plot and PDF
+plot(clean_data$AverageDistance, clean_data$Detected, pch = 19, col = "gray40",
+     xlab = "Average Observer Distance", ylab = "Probability of Detection",
+     main = "Effect of Distance on Mouse Deer Detection", ylim = c(0, 1))
+lines(newdata_dist$AverageDistance, newdata_dist$prob, col = "red", lwd = 2.5)
+dev.copy(pdf, "logistic_curve_distance.pdf", width = 7, height = 5)
+dev.off()
+
+```
+
