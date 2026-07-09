@@ -16,3 +16,5 @@ Activity 9: https://axelaugalde-star.github.io/datasci/PCAtest/[LBBBI27]Ugalde-A
 Activity 10: https://axelaugalde-star.github.io/datasci/GIS/[LBBBI27]Ugalde-Activity-10.html
 
 Activity 11: https://axelaugalde-star.github.io/datasci/LinearRegression/[LBBBI27]Ugalde-Activity-11.html
+
+Activity 12: https://axelaugalde-star.github.io/datasci/LogisticRegression/[LBBBI27]Ugalde-Activity-12.html
