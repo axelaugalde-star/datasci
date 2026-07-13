@@ -18,3 +18,4 @@ Activity 10: https://axelaugalde-star.github.io/datasci/GIS/[LBBBI27]Ugalde-Acti
 Activity 11: https://axelaugalde-star.github.io/datasci/LinearRegression/[LBBBI27]Ugalde-Activity-11.html
 
 Activity 12: https://axelaugalde-star.github.io/datasci/LogisticRegression/[LBBBI27]Ugalde-Activity-12.html
+(im sorry i forgot to change the title should be # Activity 12 - Logistic Regression)
