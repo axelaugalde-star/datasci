@@ -21,3 +21,5 @@ Activity 12: https://axelaugalde-star.github.io/datasci/LogisticRegression/[LBBB
 (im sorry i forgot to change the title should be # Activity 12 - Logistic Regression)
 
 Activity 13: https://axelaugalde-star.github.io/datasci/RandomForest/[LBBBI27]Ugalde-Activity-13.html
+
+Activity 14: https://axelaugalde-star.github.io/datasci/GradientBoosting/[LBBBI27]UgaldePascual-Activity-14.html
