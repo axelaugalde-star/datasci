@@ -1,0 +1,183 @@
+---
+title: "UgaldePascual_gradient_boost.rmd"
+author: "Axela Keeza T. Ugalde; Javi A. Pascual"
+date: "`r Sys.Date()`"
+output: html_document
+---
+# Activity 14 - Ensemble Learning: Gradient Boosting {.tabset .tabset-fade .tabset-pills}
+
+## Definitions
+**Disclaimer**: The content of this page were the output from Gemini AI. <br><br>
+**Gradient Boosting**
+
+It is an ensemble machine learning technique used for both regression and classification. It builds a strong predictive model by sequentially training a series of *"weak learners"* (typically shallow decision trees, or "stumps").<br><br>
+Unlike methods that train trees independently, Gradient Boosting works step-by-step. Each new tree is trained to predict the **residuals** (the errors or the gradient of the loss function) of the combined ensemble of all previous trees. By minimizing a defined loss function via gradient descent in the prediction space, the ensemble progressively reduces its overall error. <br><br>
+
+**Comparison with Random Forest**
+
+
+| Feature | Random Forest | Gradient Boosting |
+| :- | :--- | :--- |
+| Ensemble Philosophy | **Bagging** (Bootstrap Aggregating) | **Boosting** |
+| Tree Generation | Trees are built in **parallel and are completely independent**. | Trees are **built sequentially**; each tree depends on the errors of the prior ones.|
+| Tree Depth | Typically uses **deep, fully-grown trees** (low bias, high variance). | Typically uses **shallow trees or stumps**(high bias, low variance). |
+| Error Reduction | Primarily reduces **variance** by averaging un-correlated, deep trees. | Primarily reduces **bias** by sequentially correcting systematic errors. |
+| Overfitting Risk | **Low.** Adding more trees does not cause overfitting; it just stabilizes the error. | **Moderate to High.** If the number of trees is too large, it can overfit the noise in the residuals. |
+| Hyperparameters | **Fewer parameters** to tune (mostly number of trees and variables per split). | **Highly sensitive to hyperparameters** (learning rate, number of trees, tree depth). |
+
+## Implementation Types 
+**Disclaimer**: The content of this page were the output from Gemini AI. <br><br>
+**Different implementation types of Gradient Boosting**<br>
+Depending on the underlying loss function, data structure, and optimization goals, Gradient Boosting can be implemented in several ways:
+<div style="margin-left: 75px; margin-right: 150px; text-align: justify;">
+
+**1. Gradient Boosted Regression Trees (Continuous Data)**
+
+  * **Target Variable:** Continuous numerical values (e.g., housing prices, temperature).
+  * The classic implementation designed for continuous target variables. It typically optimizes the Mean Squared Error (MSE or $L_2$ loss) or Mean Absolute Error (MAE or $L_1$ loss). Each sequential tree is fit directly to the pseudo-residuals of the previous predictions. <br>
+  
+**2. Gradient Boosted Classification Trees (Categorical/Discrete Data)**
+
+  * **Target Variable:** Binary (Yes/No, 0/1) or Multiclass labels (Red/Blue/Green).
+  * Used for binary or multiclass categorical targets. Instead of directly predicting classes, the trees predict log-odds (for binary classification) or class probabilities using a softmax-like objective, optimizing Bernoulli or Multinomial negative log-likelihood.<br>
+  
+**3. Poisson / Count Gradient Boosting (Count Data)**
+
+  * **Target Variable:** Non-negative integers representing counts or frequencies (e.g., number of website clicks, traffic accidents per day).
+  * An advanced, highly optimized framework that includes regularization (L1 and L2 penalty on leaf weights) to prevent overfitting. It utilizes a second-order Taylor expansion to approximate the loss function, enabling faster and highly accurate tree splits.<br>
+  
+**4. Survival Gradient Boosting (Time-to-Event Data)**
+
+  * **Target Variable:** Time until an event occurs, often accompanied by censoring indicators (e.g., time until machine failure or patient relapse).
+  * At each iteration, a subsample of the training data is drawn at random (without replacement) to train the base learner. This injection of randomness mimics bagging, which reduces variance, improves generalization, and speeds up computation.<br>
+  
+</div>
+
+## Manual Implementation
+**Disclaimer**: This code was made with Gemini AI. <br><br>
+
+**Implementation Type: Gradient Boosted Regression Tree (GBRT)**
+```{r manual, echo = TRUE, warning = TRUE, fig.align = "center"}
+# Using the data from Activity 13
+my_data <- read.csv("call_data_12October2025.csv")
+
+# Clean and remove Remove first column
+clean_data <- my_data[complete.cases(my_data), ]
+frog_data <- clean_data[, -1]
+
+# Force to character
+frog_data$Species <- as.character(frog_data$Species)
+
+# Select 2 most abundant species 
+top_species <- names(sort(table(frog_data$Species), decreasing = TRUE))[1:2]
+binary_data <- frog_data[frog_data$Species %in% top_species, ]
+
+# Assign to binary
+y <- ifelse(binary_data$Species == top_species[1], 1, 0)
+
+# Numeric measurements as Predictors
+numeric_cols <- names(binary_data)[sapply(binary_data, is.numeric)]
+X_mat <- binary_data[, numeric_cols]
+n <- length(y)
+
+# Vector to track SSE reduction
+importance_scores <- numeric(length(numeric_cols))
+names(importance_scores) <- numeric_cols
+
+# Decision Stump function - find the single best split for current errors
+fit_multi_stump <- function(X_matrix, residuals) {
+  best_sse <- Inf
+  best_feat <- NA
+  best_split <- NA
+  best_left_val <- NA
+  best_right_val <- NA
+  best_drop <- 0
+  
+# Calculate baseline error before splitting
+  base_sse <- sum((residuals - mean(residuals))^2)
+  
+# Loop to calculate midpoints bet every consecutive value as potential split boundaries
+  for (i in names(X_matrix)) {
+    x_vec <- X_matrix[[i]]
+    candidates <- unique(sort(x_vec))
+    if(length(candidates) > 1) {
+      candidates <- (candidates[-1] + candidates[-length(candidates)]) / 2
+    }
+
+# Loop through the candidates 
+    for (j in candidates) {
+      left_idx  <- x_vec <= j #if smaller than or equal to split point
+      right_idx <- !left_idx  #if larger than split point
+      
+      left_val  <- if(sum(left_idx) > 0) mean(residuals[left_idx]) else 0
+      right_val <- if(sum(right_idx) > 0) mean(residuals[right_idx]) else 0
+
+# Sum up remaining squared errors on both sides    
+      sse <- sum((residuals[left_idx] - left_val)^2) + sum((residuals[right_idx] - right_val)^2)
+
+# If this split yields a lower error than any tested split
+      if (sse < best_sse) {
+        best_sse <- sse
+        best_feat <- i
+        best_split <- j
+        best_left_val <- left_val
+        best_right_val <- right_val
+        best_drop <- base_sse - sse
+      }
+    }
+  }
+  
+# Return a list containing all details of the absolute best stump
+  return(list(feature = best_feat, 
+              split = best_split, 
+              left_val = best_left_val, 
+              right_val = best_right_val, 
+              sse_drop = best_drop))
+}
+
+# Classification Gradient Boosting Loop
+M <- 30
+learning_rate <- 0.1
+
+p_init <- mean(y)
+f_current <- rep(log(p_init / (1 - p_init)), n) 
+
+stumps_list <- list()
+
+# Run the boosting loop sequentially 30 times
+for (m in 1:M) {
+  p_current <- 1 / (1 + exp(-f_current))  
+  residuals <- y - p_current
+
+# Find the single best decision stump that fits these exact errors
+  stump_m <- fit_multi_stump(X_mat, residuals)
+  stumps_list[[m]] <- stump_m
+  
+# Accumulate the importance score based on how much SSE this split eliminated
+  importance_scores[stump_m$feature] <- importance_scores[stump_m$feature] + stump_m$sse_drop 
+  
+# Update ensemble predictions using the selected feature
+  x_selected <- X_mat[[stump_m$feature]]
+  pred_res <- ifelse(x_selected <= stump_m$split,
+                     stump_m$left_val,
+                     stump_m$right_val)
+  f_current <- f_current + (learning_rate * pred_res)
+}
+
+# Sort
+sorted_importance <- sort(importance_scores, decreasing = TRUE)
+print(round(sorted_importance, 4))
+
+# Graph
+op <- par(mar = c(5, 12, 4, 2))
+
+barplot(rev(sorted_importance), 
+        horiz = TRUE, 
+        las = 1, 
+        col = "lightcoral",
+        border = "indianred4",
+        main = "Top Acoustic Predictors for Frog Species",
+        xlab = "Total Sum of Squared Error (SSE) Reduction")
+
+par(op)
+```
