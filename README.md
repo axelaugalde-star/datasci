@@ -22,4 +22,4 @@ Activity 12: https://axelaugalde-star.github.io/datasci/LogisticRegression/[LBBB
 
 Activity 13: https://axelaugalde-star.github.io/datasci/RandomForest/[LBBBI27]Ugalde-Activity-13.html
 
-Activity 14: https://axelaugalde-star.github.io/datasci/GradientBoosting/[LBBBI27]UgaldePascual-Activity-14.html
+Activity 14: https://axelaugalde-star.github.io/datasci
